@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+#from PyQt5.QtCore import QFile
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -12,6 +14,10 @@ class Ui_Dialog(object):
         Dialog.setSizePolicy(sizePolicy)
         Dialog.setMinimumSize(QtCore.QSize(300, 200))
         Dialog.setMaximumSize(QtCore.QSize(300, 200))
+        icon = QtGui.QIcon()
+        #print(QFile.exists('vtupload/bug.png'))
+        icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        Dialog.setWindowIcon(icon)
         self.textBrowser = QtWidgets.QTextBrowser(Dialog)
         self.textBrowser.setGeometry(QtCore.QRect(0, 0, 300, 200))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)

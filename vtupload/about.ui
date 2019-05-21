@@ -31,6 +31,12 @@
   <property name="windowTitle">
    <string>About</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normalon>bug.png</normalon>
+    <activeon>bug.png</activeon>
+   </iconset>
+  </property>
   <widget class="QTextBrowser" name="textBrowser">
    <property name="geometry">
     <rect>

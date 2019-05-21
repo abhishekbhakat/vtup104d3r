@@ -2,6 +2,7 @@
 import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+#from PyQt5.QtCore import QFile
 from . import about
 
 
@@ -16,6 +17,10 @@ class Ui_MainWindow(object):
         MainWindow.setSizePolicy(sizePolicy)
         MainWindow.setMinimumSize(QtCore.QSize(500, 750))
         MainWindow.setMaximumSize(QtCore.QSize(500, 750))
+        icon = QtGui.QIcon()
+        #print(QFile.exists('vtupload/bug.png'))
+        icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
@@ -96,7 +101,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "vtup104d3r"))
         item = self.tableWidget.horizontalHeaderItem(0)
         item.setText(_translate("MainWindow", "File"))
         item = self.tableWidget.horizontalHeaderItem(1)

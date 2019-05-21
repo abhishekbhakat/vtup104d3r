@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow
+from PyQt5 import QtGui
 from vtupload import vtqt
 
 class AppWindow(QMainWindow):
