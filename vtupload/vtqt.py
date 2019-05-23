@@ -3,7 +3,7 @@ import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
-from . import about
+from . import about, openfile
 
 
 class Ui_MainWindow(object):
@@ -95,6 +95,7 @@ class Ui_MainWindow(object):
 
         self.actionQuit.triggered.connect(QtWidgets.qApp.quit)
         self.actionAbout.triggered.connect(self.aboutUi)
+        self.actionOpen.triggered.connect(self.openFileUi)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -120,3 +121,14 @@ class Ui_MainWindow(object):
     	x = about.Ui_Dialog()
     	x.setupUi(dwin)
     	dwin.exec()
+
+    def openFileUi(self):
+        x = openfile.Ui_Widget()
+        filename = x.initUI()
+        for i in range(16):
+        	item = self.tableWidget.item(0+i,0)
+        	if not item:
+        		item = QtWidgets.QTableWidgetItem(filename)
+        		self.tableWidget.setItem(0+i,0,item)
+        		self.tableWidget.update()
+        		break
