@@ -4,9 +4,15 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
 from . import about, openfile
+from vtupload.vtapi import vtapi
 
 
 class Ui_MainWindow(object):
+    def __init__(self):
+        self.tableLength = 0
+        self.tableUsed = 0
+        self.hashlist = []
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(500, 750)
@@ -38,7 +44,7 @@ class Ui_MainWindow(object):
         self.textBrowser.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.textBrowser.setObjectName("textBrowser")
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
-        self.tableWidget.setGeometry(QtCore.QRect(0, 200, 500, 550))
+        self.tableWidget.setGeometry(QtCore.QRect(0, 200, 500, 500))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -51,7 +57,7 @@ class Ui_MainWindow(object):
         self.tableWidget.setShowGrid(True)
         self.tableWidget.setWordWrap(False)
         self.tableWidget.setCornerButtonEnabled(False)
-        self.tableWidget.setRowCount(17)
+        self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(2)
         self.tableWidget.setObjectName("tableWidget")
         item = QtWidgets.QTableWidgetItem()
@@ -65,7 +71,7 @@ class Ui_MainWindow(object):
         self.tableWidget.verticalHeader().setVisible(False)
         self.tableWidget.verticalHeader().setHighlightSections(False)
         self.tableWidget.verticalHeader().setMinimumSectionSize(30)
-        self.tableWidget.verticalHeader().setStretchLastSection(True)
+        self.tableWidget.verticalHeader().setStretchLastSection(False)
         self.tableWidget.setColumnWidth(0,399)
         self.tableWidget.setColumnWidth(1,99)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -125,10 +131,16 @@ class Ui_MainWindow(object):
     def openFileUi(self):
         x = openfile.Ui_Widget()
         filename = x.initUI()
-        for i in range(16):
-        	item = self.tableWidget.item(0+i,0)
-        	if not item:
-        		item = QtWidgets.QTableWidgetItem(filename)
-        		self.tableWidget.setItem(0+i,0,item)
-        		self.tableWidget.update()
-        		break
+        if not filename:
+        	return
+        hash = vtapi.gethash(filename)
+        if hash not in self.hashlist:
+        	self.hashlist.append(hash)
+        	self.tableWidget.insertRow(self.tableLength)
+        	self.tableLength += 1
+        	item = QtWidgets.QTableWidgetItem(filename)
+        	self.tableWidget.setItem(self.tableUsed,0,item)
+        	self.tableWidget.update()
+        	self.tableUsed += 1
+        else:
+        	print("already exists")
