@@ -1,6 +1,5 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QInputDialog, QLineEdit, QFileDialog, QDialog
-from PyQt5.QtGui import QIcon
 
 class Ui_Widget(QWidget):
     
@@ -10,5 +9,3 @@ class Ui_Widget(QWidget):
         # if fileName:
         #      print(fileName)
         return fileName
-
-        

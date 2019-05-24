@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 import sys
-
+import re
 from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
-from . import about, openfile
+from . import about, openfile, insertapi
 from vtupload.vtapi import vtapi
 
 
@@ -19,7 +18,7 @@ class Ui_MainWindow(object):
 
 
     def setupUi(self, MainWindow):
-    	#MAIN UI SETUP
+        #MAIN UI SETUP
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(500, 750)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -101,16 +100,17 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionQuit)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.actionAbout)
-		#MENU ACTION TRIGGER        
+        #MENU ACTION TRIGGER        
         self.actionQuit.triggered.connect(QtWidgets.qApp.quit)
         self.actionAbout.triggered.connect(self.aboutUi)
         self.actionOpen.triggered.connect(self.openFileUi)
+        self.actionInsert_API_Key.triggered.connect(self.insertApiUi)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-    	#MAIN UI TEXT (to translate)
+        #MAIN UI TEXT (to translate)
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "vtup104d3r"))
         item = self.tableWidget.horizontalHeaderItem(0)
@@ -127,52 +127,61 @@ class Ui_MainWindow(object):
         self.actionQuit.setShortcut(_translate("MainWindow", "Ctrl+Q"))
 
     def aboutUi(self):
-    	#ABOUT DIALOG
-    	dwin = QtWidgets.QDialog()
-    	x = about.Ui_Dialog()
-    	x.setupUi(dwin)
-    	dwin.setWindowIcon(self.icon)
-    	dwin.exec()
+        #ABOUT DIALOG
+        dwin = QtWidgets.QDialog()
+        x = about.Ui_Dialog()
+        x.setupUi(dwin)
+        dwin.setWindowIcon(self.icon)
+        dwin.exec()
 
     def openFileUi(self):
-    	#ADD FILE DIALOG
+        #ADD FILE DIALOG
         if not self.verifyKey():
-        	return
+            return
         x = openfile.Ui_Widget()
         filename = x.initUI()
         if not filename:
-        	return
+            return
         hash = vtapi.gethash(filename)
         if hash not in self.hashlist:
-        	self.hashlist.append(hash)
-        	self.tableWidget.insertRow(self.tableLength)
-        	self.tableLength += 1
-        	item = QtWidgets.QTableWidgetItem(filename)
-        	self.tableWidget.setItem(self.tableUsed,0,item)
-        	self.tableWidget.update()
-        	self.tableUsed += 1
-        	self.scanInit(filename)
+            self.hashlist.append(hash)
+            self.tableWidget.insertRow(self.tableLength)
+            self.tableLength += 1
+            item = QtWidgets.QTableWidgetItem(filename)
+            self.tableWidget.setItem(self.tableUsed,0,item)
+            self.tableWidget.update()
+            self.tableUsed += 1
+            self.scanInit(filename)
         else:
-        	alert = QtWidgets.QWidget()
-        	alert.setWindowIcon(self.icon)
-        	QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
-        	
+            alert = QtWidgets.QWidget()
+            alert.setWindowIcon(self.icon)
+            QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
+            
     def scanInit(self,filename):
-    	self.verifyKey()
+        self.verifyKey()
 
     def verifyKey(self):
-    	while not vtapi.checkapi(self.apikey):
-    		alert = QtWidgets.QWidget()
-    		alert.setWindowIcon(self.icon)
-    		if self.apikey == "":
-    			QtWidgets.QMessageBox.about(alert, "Alert", "API Key Required !")
-    		else:
-    			QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
-    		oldkey = self.apikey
-    		self.insertApiUi()
-    		if oldkey == self.apikey:
-    			return False
-    	return True
+        alert = QtWidgets.QWidget()
+        alert.setWindowIcon(self.icon)
+        if not vtapi.checkapi(self.apikey):
+            if self.apikey == "":
+                QtWidgets.QMessageBox.about(alert, "Alert", "API Key Required !")
+            else:
+                QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
+            return False
+        QtWidgets.QMessageBox.about(alert, "Alert", "Key Accepted !")
+        return True
 
     def insertApiUi(self):
-    	return
+        dwin = QtWidgets.QDialog()
+        x = insertapi.Ui_Form()
+        x.setupUi(dwin,self.apikey)
+        dwin.setWindowIcon(self.icon)
+        dwin.exec()
+        self.apikey = x.apikey
+        if not re.match('[a-z0-9]{64}',self.apikey):
+            alert = QtWidgets.QWidget()
+            alert.setWindowIcon(self.icon)
+            QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
+        elif not self.verifyKey():
+            self.apikey=""
