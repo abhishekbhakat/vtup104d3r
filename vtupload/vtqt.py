@@ -15,9 +15,11 @@ class Ui_MainWindow(object):
         self.icon = QtGui.QIcon()
         #print(QFile.exists('vtupload/bug.png'))
         self.icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.apikey = ""
 
 
     def setupUi(self, MainWindow):
+    	#MAIN UI SETUP
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(500, 750)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -93,13 +95,13 @@ class Ui_MainWindow(object):
         self.actionQuit.setObjectName("actionQuit")
         self.actionAbout = QtWidgets.QAction(MainWindow)
         self.actionAbout.setObjectName("actionAbout")
-
+        #MENU ACTION SETUP
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionInsert_API_Key)
         self.menuFile.addAction(self.actionQuit)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.actionAbout)
-
+		#MENU ACTION TRIGGER        
         self.actionQuit.triggered.connect(QtWidgets.qApp.quit)
         self.actionAbout.triggered.connect(self.aboutUi)
         self.actionOpen.triggered.connect(self.openFileUi)
@@ -108,6 +110,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
+    	#MAIN UI TEXT (to translate)
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "vtup104d3r"))
         item = self.tableWidget.horizontalHeaderItem(0)
@@ -124,12 +127,17 @@ class Ui_MainWindow(object):
         self.actionQuit.setShortcut(_translate("MainWindow", "Ctrl+Q"))
 
     def aboutUi(self):
+    	#ABOUT DIALOG
     	dwin = QtWidgets.QDialog()
     	x = about.Ui_Dialog()
     	x.setupUi(dwin)
+    	dwin.setWindowIcon(self.icon)
     	dwin.exec()
 
     def openFileUi(self):
+    	#ADD FILE DIALOG
+        if not self.verifyKey():
+        	return
         x = openfile.Ui_Widget()
         filename = x.initUI()
         if not filename:
@@ -143,8 +151,28 @@ class Ui_MainWindow(object):
         	self.tableWidget.setItem(self.tableUsed,0,item)
         	self.tableWidget.update()
         	self.tableUsed += 1
+        	self.scanInit(filename)
         else:
         	alert = QtWidgets.QWidget()
         	alert.setWindowIcon(self.icon)
         	QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
         	
+    def scanInit(self,filename):
+    	self.verifyKey()
+
+    def verifyKey(self):
+    	while not vtapi.checkapi(self.apikey):
+    		alert = QtWidgets.QWidget()
+    		alert.setWindowIcon(self.icon)
+    		if self.apikey == "":
+    			QtWidgets.QMessageBox.about(alert, "Alert", "API Key Required !")
+    		else:
+    			QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
+    		oldkey = self.apikey
+    		self.insertApiUi()
+    		if oldkey == self.apikey:
+    			return False
+    	return True
+
+    def insertApiUi(self):
+    	return

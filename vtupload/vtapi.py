@@ -17,3 +17,12 @@ class vtapi(object):
 			    hasher.update(buf)
 			    buf = afile.read(BLOCKSIZE)
 		return hasher.hexdigest()
+
+	def checkapi(api):
+		url = 'https://www.virustotal.com/vtapi/v2/url/report'
+		resource = 'virustotal.com'
+		params = {'apikey': api, 'resource': resource}
+		response = requests.get(url, params=params)
+		if not response:
+			return False
+		return True
