@@ -12,6 +12,10 @@ class Ui_MainWindow(object):
         self.tableLength = 0
         self.tableUsed = 0
         self.hashlist = []
+        self.icon = QtGui.QIcon()
+        #print(QFile.exists('vtupload/bug.png'))
+        self.icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -23,10 +27,7 @@ class Ui_MainWindow(object):
         MainWindow.setSizePolicy(sizePolicy)
         MainWindow.setMinimumSize(QtCore.QSize(500, 750))
         MainWindow.setMaximumSize(QtCore.QSize(500, 750))
-        icon = QtGui.QIcon()
-        #print(QFile.exists('vtupload/bug.png'))
-        icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
-        MainWindow.setWindowIcon(icon)
+        MainWindow.setWindowIcon(self.icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
@@ -143,4 +144,7 @@ class Ui_MainWindow(object):
         	self.tableWidget.update()
         	self.tableUsed += 1
         else:
-        	print("already exists")
+        	alert = QtWidgets.QWidget()
+        	alert.setWindowIcon(self.icon)
+        	QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
+        	
