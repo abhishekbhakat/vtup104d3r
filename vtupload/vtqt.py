@@ -1,5 +1,6 @@
 import sys
 import re
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
 from . import about, openfile, insertapi
@@ -19,6 +20,7 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         #MAIN UI SETUP
+        self.sessionCheck()
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(500, 750)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -31,20 +33,17 @@ class Ui_MainWindow(object):
         MainWindow.setWindowIcon(self.icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
-        self.textBrowser.setEnabled(True)
-        self.textBrowser.setGeometry(QtCore.QRect(0, 0, 500, 200))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.textBrowser.sizePolicy().hasHeightForWidth())
-        self.textBrowser.setSizePolicy(sizePolicy)
-        self.textBrowser.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.IBeamCursor))
-        self.textBrowser.setMouseTracking(True)
-        self.textBrowser.setStyleSheet("font-style: \"Consolas\";")
-        self.textBrowser.setFrameShape(QtWidgets.QFrame.Box)
-        self.textBrowser.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.textBrowser.setObjectName("textBrowser")
+        self.plainTextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
+        self.plainTextEdit.setGeometry(QtCore.QRect(0, 0, 500, 200))
+        font = QtGui.QFont()
+        font.setFamily("Consolas")
+        font.setPointSize(10)
+        self.plainTextEdit.setFont(font)
+        self.plainTextEdit.setReadOnly(True)
+        self.plainTextEdit.setObjectName("plainTextEdit")
+        self.plainTextEdit.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.IBeamCursor))
+        self.plainTextEdit.setMouseTracking(False)
+        self.plainTextEdit.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
         self.tableWidget.setGeometry(QtCore.QRect(0, 200, 500, 500))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -169,7 +168,6 @@ class Ui_MainWindow(object):
             else:
                 QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
             return False
-        QtWidgets.QMessageBox.about(alert, "Alert", "Key Accepted !")
         return True
 
     def insertApiUi(self):
@@ -179,9 +177,66 @@ class Ui_MainWindow(object):
         dwin.setWindowIcon(self.icon)
         dwin.exec()
         self.apikey = x.apikey
+        alert = QtWidgets.QWidget()
+        alert.setWindowIcon(self.icon)
         if not re.match('[a-z0-9]{64}',self.apikey):
-            alert = QtWidgets.QWidget()
-            alert.setWindowIcon(self.icon)
             QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
         elif not self.verifyKey():
             self.apikey=""
+        else:
+        	log = "Key In Use "+self.apikey
+        	old = self.plainTextEdit.toPlainText()
+        	self.plainTextEdit.setPlainText(old+log+"\n")
+        	self.sessionCreate()
+
+    def sessionCheck(self):
+    	if os.name == 'nt':
+    		sdir = os.getenv('TMP')+'\\vtup104d3r'
+    		if not os.path.isfile(sdir+'\\apikey.vt'):
+    			return False
+    		kfile = open(sdir+'\\apikey.vt','r')
+    		ckey = kfile.read()
+    		kfile.close()
+    		if re.match('[a-z0-9]{64}',ckey):
+    			self.apikey=ckey
+    			# print("Session Found")
+    			return True
+    		# print("Session Not Found")
+    		return False
+
+    	elif os.name == 'posix':
+    		sdir = os.getenv('HOME')+'/vtup104d3r'
+    		if not os.path.isdir(sdir):
+    			os.mkdir(sdir)
+    		kfile = open(sdir+'/apikey.vt','r')
+    		ckey = kfile.read()
+    		kfile.close()
+    		if re.match('[a-z0-9]{64}',ckey):
+    			self.apikey=ckey
+    			return True
+    		return False
+
+    	# else:
+    		# print("Session Failed")
+    	return False
+
+    def sessionCreate(self):
+    	if os.name == 'nt':
+    		sdir = os.getenv('TMP')+'\\vtup104d3r'
+    		if not os.path.isdir(sdir):
+    			os.mkdir(sdir)
+    		kfile = open(sdir+'\\apikey.vt','w')
+    		kfile.write(self.apikey)
+    		kfile.close()
+
+    	elif os.name == 'posix':
+    		sdir = os.getenv('HOME')+'/vtup104d3r'
+    		if not os.path.isdir(sdir):
+    			os.mkdir(sdir)
+    		kfile = open(sdir+'/apikey.vt','w')
+    		kfile.write(self.apikey)
+    		kfile.close()
+
+    	# else:
+    		# print("Session Failed")
+    	return

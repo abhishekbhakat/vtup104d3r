@@ -1,5 +1,6 @@
 import hashlib
 import requests
+from requests.exceptions import ConnectionError
 
 BLOCKSIZE = 65536
 
@@ -22,7 +23,10 @@ class vtapi(object):
         url = 'https://www.virustotal.com/vtapi/v2/url/report'
         resource = 'virustotal.com'
         params = {'apikey': api, 'resource': resource}
-        response = requests.get(url, params=params)
-        if not response:
-            return False
+        try:
+        	response = requests.get(url, params=params)
+        	if not response:
+        		return False
+        except ConnectionError as e :
+        	return False
         return True
