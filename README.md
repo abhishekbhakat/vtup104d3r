@@ -3,6 +3,16 @@
 Virus Total Uploader
 using [Public API](https://www.virustotal.com/en/documentation/public-api/) from virustotal.com
 
+## Requirements
+```
+pip install pyqt5
+pip install requests
+```
+## Run
+```
+python app.py
+```
+
 ## Author
 ```
 Abhishek Bhakat 

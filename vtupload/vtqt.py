@@ -5,7 +5,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
 from . import about, openfile, insertapi
 from vtupload.vtapi import vtapi
-
+import threading
+import time
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -16,11 +17,14 @@ class Ui_MainWindow(object):
         #print(QFile.exists('vtupload/bug.png'))
         self.icon.addPixmap(QtGui.QPixmap("vtupload/bug.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.apikey = ""
+        self.alive = True
+        self.files = []
+        self.scanresult=[]
+        self.scanned=[]
 
 
     def setupUi(self, MainWindow):
         #MAIN UI SETUP
-        self.sessionCheck()
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(500, 750)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -28,7 +32,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(500, 750))
+        MainWindow.setMinimumSize(QtCore.QSize(500, 200))
         MainWindow.setMaximumSize(QtCore.QSize(500, 750))
         MainWindow.setWindowIcon(self.icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -108,6 +112,14 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+        conn = threading.Thread(target=self.keepAlive, args=('1',),daemon=True)
+        conn.start()
+        scn = threading.Thread(target=self.scanInit,args=('2',),daemon=True)
+        scn.start()
+        self.sessionCheck()
+
+
+
     def retranslateUi(self, MainWindow):
         #MAIN UI TEXT (to translate)
         _translate = QtCore.QCoreApplication.translate
@@ -150,16 +162,34 @@ class Ui_MainWindow(object):
             self.tableWidget.setItem(self.tableUsed,0,item)
             self.tableWidget.update()
             self.tableUsed += 1
-            self.scanInit(filename)
+            self.files.append(filename)
         else:
             alert = QtWidgets.QWidget()
             alert.setWindowIcon(self.icon)
             QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
             
-    def scanInit(self,filename):
-        self.verifyKey()
+    def scanInit(self,threadno):
+        while 1:
+            n = len(self.files)
+            # print(n)
+            if n == 0 :
+                time.sleep(5)
+                continue
+            if not self.verifyKey():
+                time.sleep(1)
+                continue
+            for i in range(n):
+                if not self.files[i] in self.scanned:
+                    self.scanresult.append(vtapi.upload(self.apikey,self.files[i]))
+                    self.scanned.append(self.files[i])
+                    
+
+
 
     def verifyKey(self):
+        if not self.alive:
+            self.noConn()
+            return
         alert = QtWidgets.QWidget()
         alert.setWindowIcon(self.icon)
         if not vtapi.checkapi(self.apikey):
@@ -171,6 +201,10 @@ class Ui_MainWindow(object):
         return True
 
     def insertApiUi(self):
+        oldkey = self.apikey
+        if not self.alive:
+            self.noConn()
+            return
         dwin = QtWidgets.QDialog()
         x = insertapi.Ui_Form()
         x.setupUi(dwin,self.apikey)
@@ -183,60 +217,75 @@ class Ui_MainWindow(object):
             QtWidgets.QMessageBox.about(alert, "Alert", "Invlaid API Key !")
         elif not self.verifyKey():
             self.apikey=""
-        else:
-        	log = "Key In Use "+self.apikey
-        	old = self.plainTextEdit.toPlainText()
-        	self.plainTextEdit.setPlainText(old+log+"\n")
-        	self.sessionCreate()
+        elif oldkey != self.apikey:
+            log = "Key In Use "+self.apikey
+            old = self.plainTextEdit.toPlainText()
+            self.plainTextEdit.setPlainText(old+log+"\n")
+            self.sessionCreate()
 
     def sessionCheck(self):
-    	if os.name == 'nt':
-    		sdir = os.getenv('TMP')+'\\vtup104d3r'
-    		if not os.path.isfile(sdir+'\\apikey.vt'):
-    			return False
-    		kfile = open(sdir+'\\apikey.vt','r')
-    		ckey = kfile.read()
-    		kfile.close()
-    		if re.match('[a-z0-9]{64}',ckey):
-    			self.apikey=ckey
-    			# print("Session Found")
-    			return True
-    		# print("Session Not Found")
-    		return False
+        if os.name == 'nt':
+            sdir = os.getenv('TMP')+'\\vtup104d3r'
+            if not os.path.isfile(sdir+'\\apikey.vt'):
+                return False
+            kfile = open(sdir+'\\apikey.vt','r')
+            ckey = kfile.read()
+            kfile.close()
+            if re.match('[a-z0-9]{64}',ckey):
+                self.apikey=ckey
+                print("Session Found")
+                log = "Key In Use "+self.apikey
+                old = self.plainTextEdit.toPlainText()
+                self.plainTextEdit.setPlainText(old+log+"\n")
+                return True
+            print("Session Not Found")
+            return False
 
-    	elif os.name == 'posix':
-    		sdir = os.getenv('HOME')+'/vtup104d3r'
-    		if not os.path.isdir(sdir):
-    			os.mkdir(sdir)
-    		kfile = open(sdir+'/apikey.vt','r')
-    		ckey = kfile.read()
-    		kfile.close()
-    		if re.match('[a-z0-9]{64}',ckey):
-    			self.apikey=ckey
-    			return True
-    		return False
+        elif os.name == 'posix':
+            sdir = os.getenv('HOME')+'/.vtup104d3r'
+            if not os.path.isdir(sdir):
+                os.mkdir(sdir)
+            kfile = open(sdir+'/apikey.vt','r')
+            ckey = kfile.read()
+            kfile.close()
+            if re.match('[a-z0-9]{64}',ckey):
+                self.apikey=ckey
+                return True
+            return False
 
-    	# else:
-    		# print("Session Failed")
-    	return False
+        # else:
+            # print("Session Failed")
+        return False
 
     def sessionCreate(self):
-    	if os.name == 'nt':
-    		sdir = os.getenv('TMP')+'\\vtup104d3r'
-    		if not os.path.isdir(sdir):
-    			os.mkdir(sdir)
-    		kfile = open(sdir+'\\apikey.vt','w')
-    		kfile.write(self.apikey)
-    		kfile.close()
+        if os.name == 'nt':
+            sdir = os.getenv('TMP')+'\\vtup104d3r'
+            if not os.path.isdir(sdir):
+                os.mkdir(sdir)
+            kfile = open(sdir+'\\apikey.vt','w')
+            kfile.write(self.apikey)
+            kfile.close()
 
-    	elif os.name == 'posix':
-    		sdir = os.getenv('HOME')+'/vtup104d3r'
-    		if not os.path.isdir(sdir):
-    			os.mkdir(sdir)
-    		kfile = open(sdir+'/apikey.vt','w')
-    		kfile.write(self.apikey)
-    		kfile.close()
+        elif os.name == 'posix':
+            sdir = os.getenv('HOME')+'/.vtup104d3r'
+            if not os.path.isdir(sdir):
+                os.mkdir(sdir)
+            kfile = open(sdir+'/apikey.vt','w')
+            kfile.write(self.apikey)
+            kfile.close()
 
-    	# else:
-    		# print("Session Failed")
-    	return
+        # else:
+            # print("Session Failed")
+        return
+
+    def keepAlive(self,threadno):
+        while 1:
+            self.alive=vtapi.checkconnection()
+            # print(self.alive)
+            if not self.alive:
+                time.sleep(1)
+
+    def noConn(self):
+        alert = QtWidgets.QWidget()
+        alert.setWindowIcon(self.icon)
+        QtWidgets.QMessageBox.about(alert, "Alert", "No Internet !")
