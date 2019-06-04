@@ -1,12 +1,13 @@
 import sys
 import re
 import os
+import threading
+import time
+import webbrowser
 from PyQt5 import QtCore, QtGui, QtWidgets
 #from PyQt5.QtCore import QFile
 from . import about, openfile, insertapi
 from vtupload.vtapi import vtapi
-import threading
-import time
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -19,26 +20,25 @@ class Ui_MainWindow(object):
         self.apikey = ""
         self.alive = True
         self.files = []
-        self.scanresult=[]
-        self.scanned=[]
+        self.scanned={}
 
 
     def setupUi(self, MainWindow):
         #MAIN UI SETUP
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(500, 750)
+        MainWindow.resize(400, 700)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(500, 200))
-        MainWindow.setMaximumSize(QtCore.QSize(500, 750))
+        MainWindow.setMinimumSize(QtCore.QSize(400, 700))
+        MainWindow.setMaximumSize(QtCore.QSize(400, 700))
         MainWindow.setWindowIcon(self.icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.plainTextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit.setGeometry(QtCore.QRect(0, 0, 500, 200))
+        self.plainTextEdit.setGeometry(QtCore.QRect(0, 0, 400, 200))
         font = QtGui.QFont()
         font.setFamily("Consolas")
         font.setPointSize(10)
@@ -49,13 +49,18 @@ class Ui_MainWindow(object):
         self.plainTextEdit.setMouseTracking(False)
         self.plainTextEdit.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
-        self.tableWidget.setGeometry(QtCore.QRect(0, 200, 500, 500))
+        self.tableWidget.setGeometry(QtCore.QRect(0, 200, 400, 450))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tableWidget.sizePolicy().hasHeightForWidth())
         self.tableWidget.setSizePolicy(sizePolicy)
         self.tableWidget.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.IBeamCursor))
+        self.tableWidget.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.tableWidget.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+        self.tableWidget.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
         self.tableWidget.setMouseTracking(False)
         self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
@@ -77,11 +82,11 @@ class Ui_MainWindow(object):
         self.tableWidget.verticalHeader().setHighlightSections(False)
         self.tableWidget.verticalHeader().setMinimumSectionSize(30)
         self.tableWidget.verticalHeader().setStretchLastSection(False)
-        self.tableWidget.setColumnWidth(0,399)
+        self.tableWidget.setColumnWidth(0,299)
         self.tableWidget.setColumnWidth(1,99)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 500, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 400, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -108,6 +113,8 @@ class Ui_MainWindow(object):
         self.actionAbout.triggered.connect(self.aboutUi)
         self.actionOpen.triggered.connect(self.openFileUi)
         self.actionInsert_API_Key.triggered.connect(self.insertApiUi)
+        self.tableWidget.itemDoubleClicked.connect(self.openLink)
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -117,8 +124,6 @@ class Ui_MainWindow(object):
         scn = threading.Thread(target=self.scanInit,args=('2',),daemon=True)
         scn.start()
         self.sessionCheck()
-
-
 
     def retranslateUi(self, MainWindow):
         #MAIN UI TEXT (to translate)
@@ -136,6 +141,33 @@ class Ui_MainWindow(object):
         self.actionInsert_API_Key.setShortcut(_translate("MainWindow", "Ctrl+I"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionQuit.setShortcut(_translate("MainWindow", "Ctrl+Q"))
+
+
+    def scanInit(self,threadno):
+        while 1:
+            n = len(self.files)
+            if n == 0 :
+                time.sleep(5)
+                continue
+            if not self.verifyKey():
+                time.sleep(1)
+                continue
+            for i in range(n):
+                if not i in self.scanned:
+                    temp = vtapi.upload(self.apikey,self.files[i])
+                    if 'finished' in temp['verbose_msg'] :
+                        self.scanned[i] = temp
+                else:
+                	msg = 'Virus '+str(self.scanned[i]['positives'])+'/'+str(self.scanned[i]['total'])
+                	self.tableWidget.setItem(i,1,QtWidgets.QTableWidgetItem(msg))
+                	self.tableWidget.update()
+
+    def openLink(self,item):
+    	if item.column() == 1 :
+    		fileno = item.row()
+    		if fileno in self.scanned:
+    			link = self.scanned[fileno]['permalink']
+    			webbrowser.open(link)
 
     def aboutUi(self):
         #ABOUT DIALOG
@@ -158,8 +190,8 @@ class Ui_MainWindow(object):
             self.hashlist.append(hash)
             self.tableWidget.insertRow(self.tableLength)
             self.tableLength += 1
-            item = QtWidgets.QTableWidgetItem(filename)
-            self.tableWidget.setItem(self.tableUsed,0,item)
+            self.tableWidget.setItem(self.tableUsed,0,QtWidgets.QTableWidgetItem(filename))
+            self.tableWidget.setItem(self.tableUsed,1,QtWidgets.QTableWidgetItem('Scanning'))
             self.tableWidget.update()
             self.tableUsed += 1
             self.files.append(filename)
@@ -168,24 +200,7 @@ class Ui_MainWindow(object):
             alert.setWindowIcon(self.icon)
             QtWidgets.QMessageBox.about(alert, "Alert", "File Already added !")
             
-    def scanInit(self,threadno):
-        while 1:
-            n = len(self.files)
-            # print(n)
-            if n == 0 :
-                time.sleep(5)
-                continue
-            if not self.verifyKey():
-                time.sleep(1)
-                continue
-            for i in range(n):
-                if not self.files[i] in self.scanned:
-                    self.scanresult.append(vtapi.upload(self.apikey,self.files[i]))
-                    self.scanned.append(self.files[i])
                     
-
-
-
     def verifyKey(self):
         if not self.alive:
             self.noConn()
@@ -289,3 +304,4 @@ class Ui_MainWindow(object):
         alert = QtWidgets.QWidget()
         alert.setWindowIcon(self.icon)
         QtWidgets.QMessageBox.about(alert, "Alert", "No Internet !")
+
