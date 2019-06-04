@@ -3,6 +3,9 @@
 Virus Total Uploader
 using [Public API](https://www.virustotal.com/en/documentation/public-api/) from virustotal.com
 
+## Prototype
+[Download](https://github.com/abhishekbhakat/vtup104d3r/blob/master/app.exe)
+
 ## Requirements
 ```
 pip install pyqt5
